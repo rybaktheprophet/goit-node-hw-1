@@ -1,46 +1,92 @@
-const fs = require('fs').promises;
+const fs = require('fs');
 const path = require('path');
-const nanoid = require('nanoid');
+const contactsPath = path.resolve('./db/contacts.json');
 
-const contactsPath = path.join(__dirname, 'db', 'contacts.json');
-
-async function listContacts() {
-  const data = await fs.readFile(contactsPath, 'utf8');
-  const contacts = JSON.parse(data);
-  return contacts;
+function listContacts() {
+  fs.readFile(contactsPath, 'utf-8', (error, data) => {
+    if (error) {
+      return console.log(error);
+    }
+    const contacts = JSON.parse(data);
+    console.log('List of contacts: ');
+    console.table(contacts);
+  });
 }
 
-async function getContactById(contactId) {
-  const contacts = await listContacts();
-  const result = contacts.find(item => item.id === contactId);
-  if (!result) {
-    return null;
-  }
-  return result;
+function getContactById(contactId) {
+  fs.readFile(contactsPath, 'utf-8', (error, data) => {
+    if (error) {
+      return console.log(error);
+    }
+    const contacts = JSON.parse(data);
+    const contact = contacts.find(contact => {
+      if (contact.id === contactId) {
+        console.log(`Find contact by ID ${contactId}:`);
+        console.table(contact);
+        return contact;
+      }
+    });
+
+    if (contact == null) {
+      console.log(`Contact with ID "${contactId}" not found!`);
+    }
+  });
 }
 
-async function removeContact(contactId) {
-  const contacts = await listContacts();
-  const idx = contacts.findIndex(item => item.id === contactId);
-  const [deletedContact] = contacts.splice(idx, 1);
-  if (idx === -1) {
-    return null;
-  }
-  await fs.writeFile(contactsPath, JSON.stringify(contacts));
-  return deletedContact;
+function addContact(name, email, phone) {
+  fs.readFile(contactsPath, 'utf-8', (error, data) => {
+    if (error) {
+      return console.log(error);
+    }
+    const contacts = JSON.parse(data);
+    const random =
+      Math.floor(
+        Math.random() * (999999999999999999999 - 100000000000000000000 + 1)
+      ) + 100000000000000000000;
+    contacts.push({
+      id: random.toString(),
+      name: name,
+      email: email,
+      phone: phone,
+    });
+    console.log('Contact added! New lists of contacts: ');
+    console.table(contacts);
+    fs.writeFile(contactsPath, JSON.stringify(contacts), error => {
+      if (error) {
+        return console.log(error);
+      }
+    });
+  });
 }
+function removeContact(contactId) {
+  fs.readFile(contactsPath, 'utf-8', (error, data) => {
+    const contacts = JSON.parse(data);
+    const deleteContact = contacts.filter(contact => {
+      if (contact.id === contactId) {
+        console.log(
+          `Delete contact with ID "${contactId}". New list of contacts:`
+        );
+        const newContacts = contacts.filter(
+          contact => contact.id !== contactId
+        );
+        console.table(newContacts);
 
-async function addContact(name, email, phone) {
-  const contacts = await listContacts();
-  const newContact = { name, email, phone, id: nanoid() };
-  contacts.push(newContact);
-  await fs.writeFile(contactsPath, JSON.stringify(contacts));
-  return newContact;
+        fs.writeFile(contactsPath, JSON.stringify(newContacts), error => {
+          if (error) {
+            return console.log(error);
+          }
+        });
+      }
+    });
+    if (error) {
+      return console.log(error);
+    }
+  });
 }
 
 module.exports = {
   listContacts,
-  getContactById,
-  removeContact,
   addContact,
+  removeContact,
+  getContactById,
 };
